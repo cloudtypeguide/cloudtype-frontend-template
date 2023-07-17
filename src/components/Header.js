@@ -6,7 +6,7 @@ const Header = () => {
             <header>
                 <nav className="flex justify-between">
                     <div className="flex items-center space-x-3 lg:pr-16 pr-6">
-                        <h2 className="font-bold text-2xl leading-6 text-gray-800">클라우드타입</h2>
+                        <h2 className="font-bold text-2xl leading-6 text-gray-800">클</h2>
                     </div>
                 </nav>
             </header>
