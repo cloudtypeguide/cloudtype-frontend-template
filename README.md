@@ -6,7 +6,7 @@
   </a>
 </p>
 
-> 클라우드타입에서 제공하는 React 프론트엔드 템플릿입니다.
+> 클라우드타입에서 제공하는 React 프론트엔드 템플릿입니다
 
 * Website: [클라우드타입 홈페이지](https://cloudtype.io/)
 * Discord: [디스코드](https://discord.com/invite/dxQ2JBKHaF)
