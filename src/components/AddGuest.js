@@ -1,32 +1,41 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 const AddGuest = () => {
-    // 화면 입력값
-    const [deptName, setDeptName] = useState('');   
-    const [bookerName, setBookerName] = useState(''); 
-    const [count, setCount] = useState('');         
-    const [roomName, setRoomName] = useState('');   
+    // 🏢 마스터 데이터: 회의실 목록 및 정원
+    const ROOMS = [
+        { name: "Focus Room", capacity: 4 },
+        { name: "Creative Lab", capacity: 8 },
+        { name: "Board Room", capacity: 20 }
+    ];
 
+    // URL 파라미터(?key=value)를 읽어오는 훅(Hook)
+    const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const { id } = useParams();
-    
-    // 🔴 [주소] 기존 성공했던 주소 유지
+
+    // 🔴 [백엔드 주소]
     const API_URL = "https://port-0-cloudtype-backend-template-mg2vve8668cb34cb.sel3.cloudtype.app/api/guests";
+
+    // 1. 상태(State) 초기화: URL에 값이 있으면 그걸 쓰고, 없으면 빈칸
+    const [deptName, setDeptName] = useState(searchParams.get('dept') || '');   
+    const [bookerName, setBookerName] = useState(searchParams.get('booker') || ''); 
+    const [timeInfo, setTimeInfo] = useState(searchParams.get('time') || '');
+    
+    // 방 선택 초기값: URL에 있으면 그 방, 없으면 첫 번째 방
+    const initialRoom = searchParams.get('room') || ROOMS[0].name;
+    const [selectedRoom, setSelectedRoom] = useState(initialRoom);
+
 
     const saveOrUpdateGuest = (e) => {
         e.preventDefault();
-        
-        // 💡 [핵심 수정] 백엔드 Guest.java 변수명에 정확히 맞춥니다.
+
+        // 백엔드(Guest.java) 변수명과 100% 일치시킴
         const guest = { 
-            // 1. num (int): 인원수 (반드시 숫자여야 함 -> parseInt)
-            num: parseInt(count) || 0, 
-            
-            // 2. name (String): 부서명과 신청자를 합쳐서 보냄
-            name: `${deptName} - ${bookerName}`,
-            
-            // 3. phoneNum (String): 여기에 '회의실 이름'을 넣습니다! (String이라 가능)
-            phoneNum: roomName
+            deptName: deptName,
+            bookerName: bookerName,
+            roomName: selectedRoom,
+            timeInfo: timeInfo
         };
 
         console.log("🌐 전송 데이터:", guest);
@@ -41,41 +50,36 @@ const AddGuest = () => {
 
         fetch(url, requestOptions)
             .then(response => {
-                if(!response.ok) {
-                    throw new Error(`Server Error (${response.status})`);
-                }
-                // 응답이 없을 수도 있으니 text로 받고 처리
+                if(!response.ok) throw new Error(`Server Error (${response.status})`);
                 return response.text().then(text => text ? JSON.parse(text) : {});
             })
             .then(() => {
-                alert("✅ 예약 성공! (변수명을 맞췄습니다)");
+                alert("✅ 회의실 예약이 확정되었습니다.");
                 navigate('/');
             })
             .catch(error => {
-                console.error("❌ 실패:", error);
-                alert(`저장 실패!\n\n${error.message}`);
+                console.error("실패:", error);
+                alert(`저장 실패!\n${error.message}`);
             });
     }
 
+    // 수정 모드일 때 데이터 불러오기
     useEffect(() => {
         if (id) {
             fetch(`${API_URL}/${id}`)
                 .then(res => res.json())
                 .then(data => {
-                    // 불러올 때도 백엔드 변수명(num, name, phoneNum)으로 받아야 함
-                    setCount(data.num); 
-                    setRoomName(data.phoneNum); // 회의실 이름 복원
-                    
-                    // "부서 - 이름" 형태로 저장했으니 다시 쪼개서 보여줌 (단순화)
-                    setBookerName(data.name); 
-                    setDeptName("정보확인"); 
+                    setDeptName(data.deptName);
+                    setBookerName(data.bookerName);
+                    setSelectedRoom(data.roomName);
+                    setTimeInfo(data.timeInfo);
                 })
                 .catch(error => console.log(error));
         }
     }, [id]);
 
     const title = () => {
-        return id ? <h2 className="text-center mb-4">예약 수정</h2> : <h2 className="text-center mb-4">새 회의실 예약</h2>
+        return id ? <h2 className="text-center mb-4">예약 수정</h2> : <h2 className="text-center mb-4">회의실 예약</h2>
     }
 
     return (
@@ -85,27 +89,40 @@ const AddGuest = () => {
                     <div className="card-body">
                         {title()}
                         <form>
+                            {/* 1. 부서명 */}
                             <div className="form-group mb-3">
                                 <label className="form-label fw-bold"> 부서명 </label>
                                 <input type="text" placeholder="예: 개발팀" className="form-control" 
                                        value={deptName} onChange={(e) => setDeptName(e.target.value)} />
                             </div>
+
+                            {/* 2. 예약자명 */}
                             <div className="form-group mb-3">
-                                <label className="form-label fw-bold"> 신청자 </label>
+                                <label className="form-label fw-bold"> 예약자 성함 </label>
                                 <input type="text" placeholder="예: 홍길동" className="form-control" 
                                        value={bookerName} onChange={(e) => setBookerName(e.target.value)} />
                             </div>
+
+                            {/* 3. 회의실 선택 (셀렉터) */}
                             <div className="form-group mb-3">
-                                <label className="form-label fw-bold"> 인원 (숫자) </label>
-                                <input type="number" placeholder="예: 4" className="form-control" 
-                                       value={count} onChange={(e) => setCount(e.target.value)} />
+                                <label className="form-label fw-bold"> 회의실 선택 </label>
+                                <select className="form-select" value={selectedRoom} onChange={(e) => setSelectedRoom(e.target.value)}>
+                                    {ROOMS.map(room => (
+                                        <option key={room.name} value={room.name}>
+                                            {room.name} (정원: {room.capacity}명)
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
+
+                            {/* 4. 시간 정보 */}
                             <div className="form-group mb-4">
-                                <label className="form-label fw-bold"> 회의실 이름 </label>
-                                <input type="text" placeholder="예: 대회의실 A" className="form-control" 
-                                       value={roomName} onChange={(e) => setRoomName(e.target.value)} />
+                                <label className="form-label fw-bold"> 사용 시간 </label>
+                                <input type="text" placeholder="예: 14:00 ~ 16:00" className="form-control" 
+                                       value={timeInfo} onChange={(e) => setTimeInfo(e.target.value)} />
                             </div>
-                            <button className="btn btn-success" onClick={(e) => saveOrUpdateGuest(e)}>저장</button>
+
+                            <button className="btn btn-success" onClick={(e) => saveOrUpdateGuest(e)}>저장하기</button>
                             <Link to="/" className="btn btn-secondary ms-2">취소</Link>
                         </form>
                     </div>
