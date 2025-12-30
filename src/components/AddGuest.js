@@ -1,117 +1,91 @@
-import React, {useEffect, useState} from "react";
-import WaitlistService from "../services/WaitlistService";
-import {useNavigate, useParams} from "react-router-dom";
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 const AddGuest = () => {
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
+    const [emailId, setEmailId] = useState(''); // 인원수 (백엔드 필드명에 따라 count 등으로 매핑)
+    const [phone, setPhone] = useState(''); // 회의실 이름 + 시간
 
-    const [name, setName] = useState('');
-    const [num, setNum] = useState('');
-    const [phoneNum, setPhoneNum] = useState('');
     const navigate = useNavigate();
-    const {id} = useParams();
+    const { id } = useParams();
+    const API_URL = "/api/guests";
 
     const saveOrUpdateGuest = (e) => {
         e.preventDefault();
-
-        const guest = {name, num, phoneNum};
+        
+        // 백엔드로 보낼 데이터 객체
+        const guest = { firstName, lastName, emailId, phone };
 
         if (id) {
-
-            WaitlistService.updateGuest(id, guest)
-                .then((response) => {
-                    navigate('/waitlist');
-                })
-                .catch(error => {
-                    console.log(error)
-                })
-
+            fetch(`${API_URL}/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(guest)
+            }).then(() => navigate('/'));
         } else {
-
-            WaitlistService.createGuest(guest)
-                .then((response) => {
-                    console.log(response.data);
-                    navigate('/waitlist');
-                })
-                .catch(error => {
-                    console.log(error)
-                })
+            fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(guest)
+            }).then(() => navigate('/'));
         }
     }
 
     useEffect(() => {
+        if (id) {
+            fetch(`${API_URL}/${id}`)
+                .then(res => res.json())
+                .then(data => {
+                    setFirstName(data.firstName);
+                    setLastName(data.lastName);
+                    setEmailId(data.emailId);
+                    setPhone(data.phone);
+                })
+                .catch(error => console.log(error));
+        }
+    }, [id]);
 
-        WaitlistService.getGuestById(id)
-            .then((response) => {
-                setName(response.data.name)
-                setNum(response.data.num)
-                setPhoneNum(response.data.phoneNum)
-                console.log(response.data)
-            })
-            .catch(error => {
-                console.log(error)
-            })
-    }, [id])
+    const title = () => {
+        return id ? <h2 className="text-center">예약 수정</h2> : <h2 className="text-center">새 회의실 예약</h2>
+    }
 
     return (
-        <div className="text-gray-900">
-            <div className="p-4 flex justify-center my-10">
-                <h1 className="text-3xl font-extrabold text">웨이팅 리스트를 작성해주세요 😀</h1>
-            </div>
-            <div className="px-3 py-4 flex justify-center">
-                <form>
-                    <div className="flex items-center mb-5">
-                        <label htmlFor="name"
-                               className="inline-block w-11/12 mr-6 text-right font-bold text-gray-600">이름</label>
-                        <input type="text"
-                               id="name"
-                               name="name"
-                               placeholder="이름"
-                               value={name}
-                               onChange={(e) => setName(e.target.value)}
-                               className="flex-1 py-2 border-b-2 border-gray-400 focus:border-black
-                                          text-gray-600 placeholder-gray-400
-                                          outline-none">
-
-                        </input>
+        <div>
+            <div className="container" style={{marginTop: "30px"}}>
+                <div className="row">
+                    <div className="card col-md-6 offset-md-3 offset-md-3">
+                        {title()}
+                        <div className="card-body">
+                            <form>
+                                <div className="form-group mb-2">
+                                    <label className="form-label"> 부서명 (First Name) </label>
+                                    <input type="text" placeholder="예: 마케팅팀" name="firstName" className="form-control" 
+                                           value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                                </div>
+                                <div className="form-group mb-2">
+                                    <label className="form-label"> 신청자명 (Last Name) </label>
+                                    <input type="text" placeholder="예: 김대리" name="lastName" className="form-control" 
+                                           value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                                </div>
+                                <div className="form-group mb-2">
+                                    <label className="form-label"> 참석 인원 (숫자) </label>
+                                    <input type="number" placeholder="예: 4" name="emailId" className="form-control" 
+                                           value={emailId} onChange={(e) => setEmailId(e.target.value)} />
+                                </div>
+                                {/* 여기가 핵심: 전화번호 필드를 회의실 정보 입력칸으로 둔갑시킴 */}
+                                <div className="form-group mb-2">
+                                    <label className="form-label"> 📅 회의실 및 시간 </label>
+                                    <input type="text" placeholder="예: 대회의실 A (14:00)" name="phone" className="form-control" 
+                                           value={phone} onChange={(e) => setPhone(e.target.value)} />
+                                    <small className="text-muted">원하는 회의실 이름과 시간을 함께 적어주세요.</small>
+                                </div>
+                                <button className="btn btn-success" onClick={(e) => saveOrUpdateGuest(e)}>저장</button>
+                                <Link to="/" className="btn btn-danger" style={{marginLeft: "10px"}}>취소</Link>
+                            </form>
+                        </div>
                     </div>
-                    <div className="flex items-center mb-5">
-                        <label htmlFor="num"
-                               className="inline-block w-11/12 mr-6 text-right font-bold text-gray-600">인원</label>
-                        <input type="number"
-                               id="num"
-                               name="num"
-                               placeholder="인원"
-                               value={num}
-                               onChange={(e) => setNum(e.target.value)}
-                               className="flex-1 py-2 border-b-2 border-gray-400 focus:border-black
-                                          text-gray-600 placeholder-gray-400
-                                          outline-none">
-
-                        </input>
-                    </div>
-                    <div className="flex items-center mb-5">
-                        <label htmlFor="phoneNum"
-                               className="inline-block w-11/12 mr-6 text-right font-bold text-gray-600">연락처</label>
-                        <input type="text"
-                               id="phoneNum"
-                               name="phoneNum"
-                               placeholder="예) 01012345678"
-                               value={phoneNum}
-                               onChange={(e) => setPhoneNum(e.target.value)}
-                               className="flex-1 py-2 border-b-2 border-gray-400 focus:border-black
-                                          text-gray-600 placeholder-gray-400
-                                          outline-none">
-
-                        </input>
-                    </div>
-
-                    <button
-                        onClick={(e) => saveOrUpdateGuest(e)}
-                        className="relative w-fit h-fit px-36 py-2 mt-20 text-xl border bg-black text-white font-extrabold">
-                        등록
-                    </button>
-
-                </form>
+                </div>
             </div>
         </div>
     )
