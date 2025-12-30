@@ -2,45 +2,37 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 const ListGuests = () => {
-    // 🔴 [수정] 환경변수고 뭐고 다 필요 없고, 작동하는 주소를 직접 넣습니다.
+    // 🔴 [성공한 주소]
     const API_URL = "https://port-0-cloudtype-backend-template-mg2vve8668cb34cb.sel3.cloudtype.app/api/guests";
 
     const [guests, setGuests] = useState([]);
 
     const getAllGuests = () => {
-        console.log("🌐 요청 보내는 중:", API_URL); // F12 콘솔 확인용
-
         fetch(API_URL)
             .then(response => {
-                // 응답이 왔는데 에러(500, 404 등)인 경우
                 if (!response.ok) {
-                    throw new Error(`서버 응답 에러! 상태코드: ${response.status}`);
+                    throw new Error(`통신 오류! 상태코드: ${response.status}`);
                 }
                 return response.json();
             })
             .then(data => {
                 setGuests(data);
-                console.log("📅 데이터 갱신 성공:", data);
+                console.log("📅 데이터 갱신됨:", data);
             })
             .catch(error => console.error("데이터 로딩 실패:", error));
     };
 
     useEffect(() => {
         getAllGuests();
-
         const handleMessage = (event) => {
-            if (event.data?.type === 'refresh_ui') {
-                console.log("🤖 AI 요청으로 화면 갱신");
-                getAllGuests();
-            }
+            if (event.data?.type === 'refresh_ui') getAllGuests();
         };
-
         window.addEventListener('message', handleMessage);
         return () => window.removeEventListener('message', handleMessage);
     }, []);
 
     const deleteGuest = (guestId) => {
-        if(window.confirm("예약을 취소하시겠습니까?")) {
+        if(window.confirm("삭제하시겠습니까?")) {
             fetch(`${API_URL}/${guestId}`, { method: 'DELETE' })
                 .then(() => getAllGuests())
                 .catch(error => console.log(error));
@@ -61,8 +53,8 @@ const ListGuests = () => {
                                 <th>No.</th>
                                 <th>부서명</th>
                                 <th>신청자</th>
-                                <th>인원</th>
-                                <th>회의실/시간</th>
+                                {/* 이메일 칸은 숨기고, 정보(회의실+인원) 칸을 늘립니다 */}
+                                <th>회의실 정보 (인원)</th>
                                 <th>관리</th>
                             </tr>
                         </thead>
@@ -72,10 +64,9 @@ const ListGuests = () => {
                                     <td>{guest.id}</td>
                                     <td>{guest.firstName}</td>
                                     <td>{guest.lastName}</td> 
-                                    <td>{guest.emailId}</td>
+                                    {/* 여기서 phone을 보여주면 'A룸 (4명)' 처럼 나옵니다 */}
                                     <td style={{fontWeight: "bold", color: "#0056b3"}}>{guest.phone}</td>
                                     <td>
-                                        <Link className="btn btn-sm btn-outline-info me-2" to={`/edit-guest/${guest.id}`}>수정</Link>
                                         <button className="btn btn-sm btn-outline-danger" onClick={() => deleteGuest(guest.id)}>취소</button>
                                     </td>
                                 </tr>
