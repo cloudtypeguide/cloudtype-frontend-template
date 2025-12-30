@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 const AddGuest = () => {
-    // 화면 입력 변수들
+    // 화면 입력값
     const [deptName, setDeptName] = useState('');   
     const [bookerName, setBookerName] = useState(''); 
     const [count, setCount] = useState('');         
@@ -11,36 +11,25 @@ const AddGuest = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     
-    // 🔴 [주소] 성공했던 주소
+    // 🔴 [주소] 기존 성공했던 주소 유지
     const API_URL = "https://port-0-cloudtype-backend-template-mg2vve8668cb34cb.sel3.cloudtype.app/api/guests";
 
     const saveOrUpdateGuest = (e) => {
         e.preventDefault();
-        console.log("🌐 전송 시도:", API_URL);
-
-        // 💡 [500 에러 해결 전략: 그릇에 맞게 담기]
         
-        // 1. 정보를 합쳐서 문자열 칸(LastName)에 넣습니다.
-        // 예: "[A룸] 4명 (개발팀)"
-        const fullInfo = `[${roomName}] ${count}명 (${deptName})`;
-
-        // 2. 혹시 모르니 20자로 자릅니다.
-        const safeInfo = fullInfo.length > 20 ? fullInfo.substring(0, 20) : fullInfo;
-
+        // 💡 [핵심 수정] 백엔드 Guest.java 변수명에 정확히 맞춥니다.
         const guest = { 
-            // 1. FirstName: 신청자 이름 (홍길동)
-            firstName: bookerName, 
+            // 1. num (int): 인원수 (반드시 숫자여야 함 -> parseInt)
+            num: parseInt(count) || 0, 
             
-            // 2. LastName: 회의실 정보 합친 것
-            lastName: safeInfo,       
+            // 2. name (String): 부서명과 신청자를 합쳐서 보냄
+            name: `${deptName} - ${bookerName}`,
             
-            // 3. Email: 가짜 이메일
-            emailId: `user${Date.now()}@test.com`, 
-            
-            // 🔴 [핵심 수정] 11자리는 너무 큽니다! 
-            // 백엔드(int)가 버틸 수 있게 딱 "0" 하나만 보냅니다.
-            phone: "0"      
+            // 3. phoneNum (String): 여기에 '회의실 이름'을 넣습니다! (String이라 가능)
+            phoneNum: roomName
         };
+
+        console.log("🌐 전송 데이터:", guest);
 
         const requestOptions = {
             method: id ? 'PUT' : 'POST',
@@ -53,14 +42,13 @@ const AddGuest = () => {
         fetch(url, requestOptions)
             .then(response => {
                 if(!response.ok) {
-                    return response.text().then(errorMessage => {
-                        throw new Error(`Server Error (${response.status})`);
-                    });
+                    throw new Error(`Server Error (${response.status})`);
                 }
+                // 응답이 없을 수도 있으니 text로 받고 처리
                 return response.text().then(text => text ? JSON.parse(text) : {});
             })
             .then(() => {
-                alert("✅ 예약 성공! (드디어 해결되었습니다)");
+                alert("✅ 예약 성공! (변수명을 맞췄습니다)");
                 navigate('/');
             })
             .catch(error => {
@@ -74,11 +62,13 @@ const AddGuest = () => {
             fetch(`${API_URL}/${id}`)
                 .then(res => res.json())
                 .then(data => {
-                    setBookerName(data.firstName);
-                    // 저장된 데이터 불러와서 화면에 뿌리기
-                    setRoomName(data.lastName); 
-                    setDeptName("상세확인필요");
-                    setCount("0");
+                    // 불러올 때도 백엔드 변수명(num, name, phoneNum)으로 받아야 함
+                    setCount(data.num); 
+                    setRoomName(data.phoneNum); // 회의실 이름 복원
+                    
+                    // "부서 - 이름" 형태로 저장했으니 다시 쪼개서 보여줌 (단순화)
+                    setBookerName(data.name); 
+                    setDeptName("정보확인"); 
                 })
                 .catch(error => console.log(error));
         }
@@ -106,7 +96,7 @@ const AddGuest = () => {
                                        value={bookerName} onChange={(e) => setBookerName(e.target.value)} />
                             </div>
                             <div className="form-group mb-3">
-                                <label className="form-label fw-bold"> 인원 </label>
+                                <label className="form-label fw-bold"> 인원 (숫자) </label>
                                 <input type="number" placeholder="예: 4" className="form-control" 
                                        value={count} onChange={(e) => setCount(e.target.value)} />
                             </div>
