@@ -52,14 +52,9 @@ const ListGuests = () => {
 
     // 🔍 특정 방, 특정 시간 슬롯에 예약이 있는지 확인하는 함수
     const getBookingInSlot = (roomName, timeSlot) => {
-        // timeSlot 예: "09:30"
         return guests.find(guest => {
-            // 1. 날짜가 같고
             if (guest.date !== selectedDate) return false;
-            // 2. 방이 같고
             if (guest.roomName !== roomName) return false;
-            // 3. 시간이 겹치는지 ( Slot >= Start  AND  Slot < End )
-            // 문자열 비교가 가능합니다 ("09:30" >= "09:00")
             return timeSlot >= guest.startTime && timeSlot < guest.endTime;
         });
     };
@@ -77,8 +72,53 @@ const ListGuests = () => {
                 </Link>
             </div>
 
-            {/* 📊 1. 시간표 섹션 (새로 추가됨) */}
-            <div className="card shadow-lg border-0 mb-5">
+            {/* 📋 1. 전체 예약 목록 (위로 이동됨) */}
+            <h5 className="fw-bold mb-3 px-2">전체 예약 목록</h5>
+            <div className="card shadow-lg overflow-hidden border-0 mb-5">
+                <div className="table-responsive">
+                    <table className="table table-hover mb-0">
+                        <thead className="bg-light bg-opacity-10">
+                            <tr>
+                                <th className="ps-4 py-3">부서</th>
+                                <th className="py-3">예약자</th>
+                                <th className="py-3">회의실</th>
+                                <th className="py-3">일시</th>
+                                <th className="text-end pe-4 py-3">관리</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {guests.map(guest => (
+                                <tr key={guest.id}>
+                                    <td className="ps-4 fw-bold">{guest.deptName}</td>
+                                    <td>{guest.bookerName}</td> 
+                                    <td>
+                                        <span className="badge bg-primary bg-opacity-25 text-primary fw-normal px-3 py-2 rounded-pill border border-primary border-opacity-25">
+                                            {guest.roomName}
+                                        </span>
+                                    </td>
+                                    <td className="text-muted small">
+                                        {guest.timeInfo}
+                                    </td>
+                                    <td className="text-end pe-4">
+                                        <Link className="btn btn-sm btn-outline-secondary me-2" to={`/edit-guest/${guest.id}`}>수정</Link>
+                                        <button className="btn btn-sm btn-outline-danger" onClick={() => deleteGuest(guest.id)}>취소</button>
+                                    </td>
+                                </tr>
+                            ))}
+                            {guests.length === 0 && (
+                                <tr>
+                                    <td colSpan="5" className="text-center py-5 text-muted">
+                                        현재 예약된 내역이 없습니다.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* 📊 2. 일별 스케줄 시간표 (아래로 이동됨) */}
+            <div className="card shadow-lg border-0">
                 <div className="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pt-4 px-4">
                     <h5 className="fw-bold mb-0">📅 일별 스케줄</h5>
                     <input 
@@ -121,7 +161,6 @@ const ListGuests = () => {
                                                             }}
                                                             title={`${booking.deptName} - ${booking.bookerName}`}
                                                         >
-                                                            {/* 칸이 좁으니 이름 첫 글자만 표시하거나 점으로 표시 */}
                                                             <span className="d-none d-md-inline text-truncate" style={{maxWidth: '100%'}}>
                                                                 {booking.bookerName}
                                                             </span>
@@ -137,51 +176,6 @@ const ListGuests = () => {
                             </tbody>
                         </table>
                     </div>
-                </div>
-            </div>
-            
-            {/* 📋 2. 기존 리스트 섹션 */}
-            <h5 className="fw-bold mb-3 px-2">전체 예약 목록</h5>
-            <div className="card shadow-lg overflow-hidden border-0">
-                <div className="table-responsive">
-                    <table className="table table-hover mb-0">
-                        <thead className="bg-light bg-opacity-10">
-                            <tr>
-                                <th className="ps-4 py-3">부서</th>
-                                <th className="py-3">예약자</th>
-                                <th className="py-3">회의실</th>
-                                <th className="py-3">일시</th>
-                                <th className="text-end pe-4 py-3">관리</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {guests.map(guest => (
-                                <tr key={guest.id}>
-                                    <td className="ps-4 fw-bold">{guest.deptName}</td>
-                                    <td>{guest.bookerName}</td> 
-                                    <td>
-                                        <span className="badge bg-primary bg-opacity-25 text-primary fw-normal px-3 py-2 rounded-pill border border-primary border-opacity-25">
-                                            {guest.roomName}
-                                        </span>
-                                    </td>
-                                    <td className="text-muted small">
-                                        {guest.timeInfo}
-                                    </td>
-                                    <td className="text-end pe-4">
-                                        <Link className="btn btn-sm btn-outline-secondary me-2" to={`/edit-guest/${guest.id}`}>수정</Link>
-                                        <button className="btn btn-sm btn-outline-danger" onClick={() => deleteGuest(guest.id)}>취소</button>
-                                    </td>
-                                </tr>
-                            ))}
-                            {guests.length === 0 && (
-                                <tr>
-                                    <td colSpan="5" className="text-center py-5 text-muted">
-                                        현재 예약된 내역이 없습니다.
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
                 </div>
             </div>
         </div>
