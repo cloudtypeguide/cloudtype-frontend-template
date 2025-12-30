@@ -2,30 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 const ListGuests = () => {
-    // 1. 사용자님이 설정한 환경변수명으로 정확히 변경!
-    const ENV_URL = process.env.REACT_APP_WAITLIST_API_URL;
-
-    // 2. 환경변수가 있으면 그걸 그대로 쓰고, 없으면 로컬호스트 사용
-    // (사용자님 값에 이미 '/api/guests'가 들어있으므로 뒤에 추가하지 않음)
-    const API_URL = ENV_URL || "http://localhost:8080/api/guests";
+    // 🔴 [수정] 환경변수고 뭐고 다 필요 없고, 작동하는 주소를 직접 넣습니다.
+    const API_URL = "https://port-0-cloudtype-backend-template-mg2vve8668cb34cb.sel3.cloudtype.app/api/guests";
 
     const [guests, setGuests] = useState([]);
 
     const getAllGuests = () => {
-        // [디버깅] F12 콘솔에서 이 로그를 확인하세요!
-        console.log("🔍 [환경변수 값 확인] REACT_APP_WAITLIST_API_URL =", ENV_URL);
-        console.log("🌐 [최종 요청 주소] API_URL =", API_URL);
+        console.log("🌐 요청 보내는 중:", API_URL); // F12 콘솔 확인용
 
         fetch(API_URL)
             .then(response => {
+                // 응답이 왔는데 에러(500, 404 등)인 경우
                 if (!response.ok) {
-                    throw new Error(`통신 오류! 상태코드: ${response.status}`);
+                    throw new Error(`서버 응답 에러! 상태코드: ${response.status}`);
                 }
                 return response.json();
             })
             .then(data => {
                 setGuests(data);
-                console.log("📅 데이터 갱신됨:", data);
+                console.log("📅 데이터 갱신 성공:", data);
             })
             .catch(error => console.error("데이터 로딩 실패:", error));
     };
@@ -66,8 +61,8 @@ const ListGuests = () => {
                                 <th>No.</th>
                                 <th>부서명</th>
                                 <th>신청자</th>
-                                <th>참석 인원</th>
-                                <th>회의실 및 시간</th>
+                                <th>인원</th>
+                                <th>회의실/시간</th>
                                 <th>관리</th>
                             </tr>
                         </thead>
@@ -77,7 +72,7 @@ const ListGuests = () => {
                                     <td>{guest.id}</td>
                                     <td>{guest.firstName}</td>
                                     <td>{guest.lastName}</td> 
-                                    <td>{guest.emailId}명</td>
+                                    <td>{guest.emailId}</td>
                                     <td style={{fontWeight: "bold", color: "#0056b3"}}>{guest.phone}</td>
                                     <td>
                                         <Link className="btn btn-sm btn-outline-info me-2" to={`/edit-guest/${guest.id}`}>수정</Link>
