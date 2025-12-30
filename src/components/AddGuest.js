@@ -2,39 +2,44 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 const AddGuest = () => {
-    const [firstName, setFirstName] = useState(''); // 부서명
-    const [lastName, setLastName] = useState('');   // 신청자
-    const [count, setCount] = useState('');         // 인원수 (화면 입력용)
-    const [roomName, setRoomName] = useState('');   // 회의실 (화면 입력용)
+    // 화면 입력 변수들
+    const [deptName, setDeptName] = useState('');   
+    const [bookerName, setBookerName] = useState(''); 
+    const [count, setCount] = useState('');         
+    const [roomName, setRoomName] = useState('');   
 
     const navigate = useNavigate();
     const { id } = useParams();
     
-    // 🔴 [성공한 주소] 이 주소는 이제 건드리지 마세요! 완벽합니다.
+    // 🔴 [주소] 성공했던 주소
     const API_URL = "https://port-0-cloudtype-backend-template-mg2vve8668cb34cb.sel3.cloudtype.app/api/guests";
 
     const saveOrUpdateGuest = (e) => {
         e.preventDefault();
-        
-        console.log("🌐 전송 주소:", API_URL);
+        console.log("🌐 전송 시도:", API_URL);
 
-        // 💡 [500 에러 해결 핵심]
-        // 1. 이메일 필드에 숫자 대신 '가짜 이메일'을 넣어서 백엔드를 안심시킵니다.
-        // (중복 에러 방지를 위해 현재시간을 섞습니다)
-        const fakeEmail = `system_${Date.now()}@reservation.com`;
-
-        // 2. 인원수(count)와 회의실(roomName)을 합쳐서 'phone'에 저장합니다.
-        // 예: "대회의실 A (4명)"
-        const combinedInfo = `${roomName} (${count}명)`;
+        // 💡 [500 에러 해결 전략: 그릇에 맞게 담기]
         
-        // 3. 길면 잘라서 500 에러 방지 (안전장치)
-        const safePhone = combinedInfo.length > 20 ? combinedInfo.substring(0, 20) : combinedInfo;
+        // 1. 정보를 합쳐서 문자열 칸(LastName)에 넣습니다.
+        // 예: "[A룸] 4명 (개발팀)"
+        const fullInfo = `[${roomName}] ${count}명 (${deptName})`;
+
+        // 2. 혹시 모르니 20자로 자릅니다.
+        const safeInfo = fullInfo.length > 20 ? fullInfo.substring(0, 20) : fullInfo;
 
         const guest = { 
-            firstName: firstName, 
-            lastName: lastName, 
-            emailId: fakeEmail,  // 백엔드: "음, 이메일 형식이군. 통과!"
-            phone: safePhone     // 여기에 핵심 정보를 다 넣음
+            // 1. FirstName: 신청자 이름 (홍길동)
+            firstName: bookerName, 
+            
+            // 2. LastName: 회의실 정보 합친 것
+            lastName: safeInfo,       
+            
+            // 3. Email: 가짜 이메일
+            emailId: `user${Date.now()}@test.com`, 
+            
+            // 🔴 [핵심 수정] 11자리는 너무 큽니다! 
+            // 백엔드(int)가 버틸 수 있게 딱 "0" 하나만 보냅니다.
+            phone: "0"      
         };
 
         const requestOptions = {
@@ -48,18 +53,19 @@ const AddGuest = () => {
         fetch(url, requestOptions)
             .then(response => {
                 if(!response.ok) {
-                    throw new Error(`HTTP Error: ${response.status}`);
+                    return response.text().then(errorMessage => {
+                        throw new Error(`Server Error (${response.status})`);
+                    });
                 }
-                // 응답이 텍스트일 수도 있고 JSON일 수도 있어서 안전하게 처리
                 return response.text().then(text => text ? JSON.parse(text) : {});
             })
             .then(() => {
-                alert("✅ 예약 성공! (500 에러 해결됨)");
+                alert("✅ 예약 성공! (드디어 해결되었습니다)");
                 navigate('/');
             })
             .catch(error => {
-                console.error("❌ 에러 발생:", error);
-                alert(`저장 실패!\n에러 내용: ${error.message}`);
+                console.error("❌ 실패:", error);
+                alert(`저장 실패!\n\n${error.message}`);
             });
     }
 
@@ -68,11 +74,11 @@ const AddGuest = () => {
             fetch(`${API_URL}/${id}`)
                 .then(res => res.json())
                 .then(data => {
-                    setFirstName(data.firstName);
-                    setLastName(data.lastName);
-                    // 수정 모드일 때는 데이터를 불러와서 적당히 보여줌 (완벽한 복원은 어렵지만 데모용으론 충분)
-                    setCount("0"); 
-                    setRoomName(data.phone); 
+                    setBookerName(data.firstName);
+                    // 저장된 데이터 불러와서 화면에 뿌리기
+                    setRoomName(data.lastName); 
+                    setDeptName("상세확인필요");
+                    setCount("0");
                 })
                 .catch(error => console.log(error));
         }
@@ -92,12 +98,12 @@ const AddGuest = () => {
                             <div className="form-group mb-3">
                                 <label className="form-label fw-bold"> 부서명 </label>
                                 <input type="text" placeholder="예: 개발팀" className="form-control" 
-                                       value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                                       value={deptName} onChange={(e) => setDeptName(e.target.value)} />
                             </div>
                             <div className="form-group mb-3">
                                 <label className="form-label fw-bold"> 신청자 </label>
                                 <input type="text" placeholder="예: 홍길동" className="form-control" 
-                                       value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                                       value={bookerName} onChange={(e) => setBookerName(e.target.value)} />
                             </div>
                             <div className="form-group mb-3">
                                 <label className="form-label fw-bold"> 인원 </label>
@@ -106,7 +112,7 @@ const AddGuest = () => {
                             </div>
                             <div className="form-group mb-4">
                                 <label className="form-label fw-bold"> 회의실 이름 </label>
-                                <input type="text" placeholder="예: A룸" className="form-control" 
+                                <input type="text" placeholder="예: 대회의실 A" className="form-control" 
                                        value={roomName} onChange={(e) => setRoomName(e.target.value)} />
                             </div>
                             <button className="btn btn-success" onClick={(e) => saveOrUpdateGuest(e)}>저장</button>
