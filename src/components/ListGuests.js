@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 const ListGuests = () => {
-    // 🔴 [성공한 주소]
     const API_URL = "https://port-0-cloudtype-backend-template-mg2vve8668cb34cb.sel3.cloudtype.app/api/guests";
 
     const [guests, setGuests] = useState([]);
@@ -10,16 +9,14 @@ const ListGuests = () => {
     const getAllGuests = () => {
         fetch(API_URL)
             .then(response => {
-                if (!response.ok) {
-                    throw new Error(`통신 오류! 상태코드: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`통신 오류! (${response.status})`);
                 return response.json();
             })
             .then(data => {
                 setGuests(data);
-                console.log("📅 데이터 갱신됨:", data);
+                console.log("데이터 갱신:", data);
             })
-            .catch(error => console.error("데이터 로딩 실패:", error));
+            .catch(error => console.error("로딩 실패:", error));
     };
 
     useEffect(() => {
@@ -51,10 +48,9 @@ const ListGuests = () => {
                         <thead style={{backgroundColor: "#f8f9fa"}}>
                             <tr>
                                 <th>No.</th>
-                                <th>부서명</th>
-                                <th>신청자</th>
-                                {/* 이메일 칸은 숨기고, 정보(회의실+인원) 칸을 늘립니다 */}
-                                <th>회의실 정보 (인원)</th>
+                                <th>신청자 (부서)</th>
+                                <th>인원</th>
+                                <th>회의실</th>
                                 <th>관리</th>
                             </tr>
                         </thead>
@@ -62,10 +58,14 @@ const ListGuests = () => {
                             {guests.map(guest => (
                                 <tr key={guest.id}>
                                     <td>{guest.id}</td>
-                                    <td>{guest.firstName}</td>
-                                    <td>{guest.lastName}</td> 
-                                    {/* 여기서 phone을 보여주면 'A룸 (4명)' 처럼 나옵니다 */}
-                                    <td style={{fontWeight: "bold", color: "#0056b3"}}>{guest.phone}</td>
+                                    
+                                    {/* 💡 백엔드 변수명에 맞춰서 보여줍니다 */}
+                                    <td>{guest.name}</td>       {/* 신청자 정보 */}
+                                    <td>{guest.num}명</td>      {/* 인원수 */}
+                                    <td style={{fontWeight: "bold", color: "#0056b3"}}>
+                                        {guest.phoneNum}        {/* 회의실 이름 */}
+                                    </td>
+                                    
                                     <td>
                                         <button className="btn btn-sm btn-outline-danger" onClick={() => deleteGuest(guest.id)}>취소</button>
                                     </td>
