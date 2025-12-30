@@ -10,19 +10,28 @@ const AddGuest = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     
-    // 1. 사용자님이 설정한 변수명으로 매칭
-    const ENV_URL = process.env.REACT_APP_WAITLIST_API_URL;
-    
-    // 2. 주소 결정 로직 (중복 경로 방지)
-    const API_URL = ENV_URL || "http://localhost:8080/api/guests";
+    // 🔴 [수정] 무조건 작동하는 주소 직접 입력
+    const API_URL = "https://port-0-cloudtype-backend-template-mg2vve8668cb34cb.sel3.cloudtype.app/api/guests";
 
     const saveOrUpdateGuest = (e) => {
         e.preventDefault();
         
-        console.log("🔍 [환경변수 값 확인] REACT_APP_WAITLIST_API_URL =", ENV_URL);
-        console.log("🌐 [전송 주소] URL =", API_URL);
+        console.log("🌐 전송 주소:", API_URL);
 
-        const guest = { firstName, lastName, emailId, phone };
+        // 🚨 [500 에러 방지] 
+        // 백엔드 DB가 허용하는 길이(보통 15~20자)에 맞춰서 강제로 자릅니다.
+        // 글자를 줄였다고 해도, 혹시 모르니 안전장치를 겁니다.
+        const safePhone = phone.length > 20 ? phone.substring(0, 20) : phone;
+
+        // 숫자인지 문자인지 헷갈리는 인원수 필드도 안전하게 처리
+        const safeEmailId = String(emailId); 
+
+        const guest = { 
+            firstName, 
+            lastName, 
+            emailId: safeEmailId, 
+            phone: safePhone 
+        };
 
         const requestOptions = {
             method: id ? 'PUT' : 'POST',
@@ -34,7 +43,10 @@ const AddGuest = () => {
 
         fetch(url, requestOptions)
             .then(response => {
-                if(!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+                if(!response.ok) {
+                    // 에러가 나면 여기서 잡힘 (500 에러 등)
+                    throw new Error(`HTTP Error: ${response.status}`);
+                }
                 return response.text().then(text => text ? JSON.parse(text) : {});
             })
             .then(() => {
@@ -43,7 +55,7 @@ const AddGuest = () => {
             })
             .catch(error => {
                 console.error("❌ 에러 발생:", error);
-                alert(`저장 실패!\n\n현재 요청 주소: ${url}\n(F12 콘솔 로그를 확인하세요)`);
+                alert(`저장 실패!\n\n1. 주소 확인: ${API_URL}\n2. 에러 내용: ${error.message}\n(F12 콘솔을 확인해주세요)`);
             });
     }
 
@@ -59,7 +71,7 @@ const AddGuest = () => {
                 })
                 .catch(error => console.log(error));
         }
-    }, [id, API_URL]);
+    }, [id]);
 
     const title = () => {
         return id ? <h2 className="text-center mb-4">예약 수정</h2> : <h2 className="text-center mb-4">새 회의실 예약</h2>
@@ -89,8 +101,9 @@ const AddGuest = () => {
                             </div>
                             <div className="form-group mb-4">
                                 <label className="form-label fw-bold"> 회의실 및 시간 </label>
-                                <input type="text" placeholder="예: A회의실 (14:00)" name="phone" className="form-control" 
+                                <input type="text" placeholder="예: A룸 (14시)" name="phone" className="form-control" 
                                        value={phone} onChange={(e) => setPhone(e.target.value)} />
+                                <small className="text-muted">최대 20자까지만 저장됩니다.</small>
                             </div>
                             <button className="btn btn-success" onClick={(e) => saveOrUpdateGuest(e)}>저장</button>
                             <Link to="/" className="btn btn-secondary ms-2">취소</Link>
