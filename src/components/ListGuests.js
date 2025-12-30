@@ -1,94 +1,82 @@
-import React, {useEffect, useState} from "react";
-import WaitlistService from "../services/WaitlistService";
-import moment from "moment";
-import "moment/locale/ko";
-import {Link} from "react-router-dom";
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 
 const ListGuests = () => {
+    // 실제 백엔드 API 주소 (본인의 스프링 서버 주소로 변경 필요할 수 있음)
+    // package.json의 proxy 설정을 따르거나, 전체 URL 입력
+    const API_URL = "/api/guests"; // 혹은 "http://localhost:8080/api/guests"
 
-    const [guests, setGuests] = useState([])
+    const [guests, setGuests] = useState([]);
+
+    const getAllGuests = () => {
+        fetch(API_URL)
+            .then(response => response.json())
+            .then(data => {
+                setGuests(data);
+                console.log("데이터 갱신됨:", data);
+            })
+            .catch(error => console.log(error));
+    };
 
     useEffect(() => {
         getAllGuests();
-    }, [])
 
-    const getAllGuests = () => {
+        // [핵심] ChatGPT(MCP)가 "예약 완료했어! 화면 갱신해!"라고 신호를 보내면 듣는 부분
+        const handleMessage = (event) => {
+            if (event.data?.type === 'refresh_ui') {
+                console.log("🤖 AI가 예약을 추가했습니다. 목록을 갱신합니다.");
+                getAllGuests();
+            }
+        };
 
-        WaitlistService.getAllGuests()
-            .then((response) => {
-                setGuests(response.data);
-                console.log(response.data);
-            })
-            .catch(error => {
-                console.log(error);
-            })
-    }
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, []);
 
     const deleteGuest = (guestId) => {
-
-        WaitlistService.deleteGuest(guestId)
-            .then((response) => {
-                getAllGuests();
-                console.log(response.data);
-            })
-            .catch(error => {
-                console.log(error);
-            })
+        fetch(`${API_URL}/${guestId}`, { method: 'DELETE' }) // 백엔드 API에 맞게 수정
+            .then(() => getAllGuests())
+            .catch(error => console.log(error));
     }
 
     return (
-        <div className="text-gray-900">
-            <div className="p-4 flex justify-center my-10">
-                <h1 className="text-3xl font-extrabold text">
-                    오늘은 {moment().format('MMMM Do')} 입니다.
-                </h1>
+        <div className="container" style={{marginTop: "50px"}}>
+            <h2 className="text-center" style={{fontWeight: "bold", color: "#333"}}>🏢 사내 회의실 예약 현황</h2>
+            <div className="row" style={{marginBottom: "20px"}}>
+                <Link to="/add-guest" className="btn btn-primary">
+                    + 회의실 수동 예약
+                </Link>
             </div>
-            <div className="p-4 flex justify-center my-10">
-                <button className="relative w-fit h-fit px-4 py-2 text-xl border bg-black text-white font-extrabold"><Link to="/add-guest">웨이팅 리스트 작성하기</Link></button>
-            </div>
-            <div className="px-3 py-4 flex justify-center">
-                <table className="w-10/12 text-md bg-gray-200 shadow-2xl mb-4">
-                    <thead className="border-b">
-                        <tr>
-                            <th className="text-left p-3 px-5">번호</th>
-                            <th className="text-left p-3 px-5">이름</th>
-                            <th className="text-left p-3 px-5">인원 수</th>
-                            <th className="text-left p-3 px-5">연락처</th>
-                            <th className="text-left p-3 px-5"></th>
+            <table className="table table-bordered table-striped">
+                <thead style={{backgroundColor: "#f8f9fa"}}>
+                    <tr>
+                        <th>예약 번호</th>
+                        <th>신청 사원명</th>
+                        <th>참석 인원</th>
+                        {/* 백엔드의 phone 필드를 '장소 및 시간'으로 보여줌 */}
+                        <th>회의실 / 시간</th> 
+                        <th>관리</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {guests.map(guest => (
+                        <tr key={guest.id}>
+                            <td>{guest.id}</td>
+                            <td>{guest.firstName} {guest.lastName}</td>
+                            <td>{guest.emailId}명</td> {/* 백엔드 변수명이 emailId나 count 등일 수 있음. 확인 필요 */}
+                            <td style={{fontWeight: "bold", color: "#0056b3"}}>
+                                {guest.phone} {/* 여기에 "대회의실 (15:00)" 같은 값이 들어옴 */}
+                            </td>
+                            <td>
+                                <Link className="btn btn-info" to={`/edit-guest/${guest.id}`} style={{marginRight:"10px"}}>수정</Link>
+                                <button className="btn btn-danger" onClick={() => deleteGuest(guest.id)}>취소</button>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        {
-                            guests.map(
-                                guest =>
-                                    <tr key={guest.id} className="border-b hover:bg-orange-100 bg-white">
-                                        <td className="p-3 px-5">{guest.id}</td>
-                                        <td className="p-3 px-5">{guest.name}</td>
-                                        <td className="p-3 px-5">{guest.num}</td>
-                                        <td className="p-3 px-5">{guest.phoneNum}</td>
-                                        <td className="p-3 px-5">
-                                            <button
-                                                type="button"
-                                                className="border border-gray-700 bg-gray-700 text-white font-bold px-4 py-2 m-2 transition duration-500 ease select-none hover:bg-gray-800 focus:outline-none focus:shadow-outline"
-                                            >
-                                                <Link to={`/edit-guest/${guest.id}`}>수정</Link>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="border border-red-500 bg-red-500 text-white font-bold px-4 py-2 m-2 transition duration-500 ease select-none hover:bg-red-800 focus:outline-none focus:shadow-outline"
-                                                onClick={() => deleteGuest(guest.id)}
-                                            >
-                                                삭제
-                                            </button>
-                                        </td>
-                                    </tr>
-                            )
-                        }
-                    </tbody>
-                </table>
-            </div>
+                    ))}
+                </tbody>
+            </table>
         </div>
     )
 }
 
-export default ListGuests
+export default ListGuests;
